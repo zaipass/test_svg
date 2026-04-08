@@ -1,0 +1,35 @@
+services:
+  # 1. Chrome 节点
+  chrome:
+    image: selenium/node-chrome:latest
+    shm_size: 2gb
+    depends_on:
+      - hub
+    environment:
+      - SE_EVENT_BUS_HOST=hub
+      - SE_NODE_HOST=chrome
+
+  # 4. Selenium Hub (调度中心)
+  hub:
+    image: selenium/hub:latest
+    container_name: selenium-hub
+    ports:
+      - "4442:4442"
+
+  # 5. 测试运行器 (Pytest)
+  test-runner:
+    build: .
+    container_name: pytest-runner
+    # 挂载报告目录
+    volumes:
+      - ./reports:/app/reports
+    # 关键：使用 host 网络，以便能访问本机 Safari (如果本机是 Mac)
+    # 同时也能通过容器名访问 Hub
+    # network_mode: "host"
+    environment:
+      - RUN_IN_DOCKER=true
+      - SE_EVENT_BUS_HOST=hub
+      # 默认跑 Chrome，可以通过命令覆盖
+      - BROWSER_TYPE=chrome
+    depends_on:
+      - hub
